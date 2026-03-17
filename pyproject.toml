@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "floe-py"
+version = "0.0.1"
+description = "Zero-dependency Python library for options flow analytics: Black-Scholes, Greeks, IV surfaces, dealer exposures, implied PDFs, hedge flow, and more."
+readme = "README.md"
+license = { text = "Dual License (MIT OR Commercial). See LICENSE.md." }
+requires-python = ">=3.10"
+authors = [
+    { name = "Full Stack Craft LLC", email = "hi@fullstackcraft.com" },
+]
+keywords = [
+    "options", "black-scholes", "greeks", "gamma", "delta", "vanna", "charm",
+    "dealer-exposure", "gex", "trading", "finance", "volatility", "implied-volatility",
+    "hedge-flow", "implied-pdf", "options-analytics",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Typing :: Typed",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+
+[project.optional-dependencies]
+scipy = ["scipy"]
+dev = ["pytest", "pytest-cov"]
+
+[project.urls]
+Homepage = "https://fullstackcraft.github.io/floe-py"
+Repository = "https://github.com/FullStackCraft/floe-py"
+Documentation = "https://fullstackcraft.github.io/floe-py/documentation"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/floe"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
