@@ -27,7 +27,7 @@ export default function Home() {
           </p>
           <div className="mt-6">
             <a
-              href="whitepaper.pdf"
+              href="https://fullstackcraft.github.io/floe/whitepaper.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block font-bold text-white bg-[#0073b7] px-6 py-3 rounded hover:bg-[#005a8f] transition-colors"
