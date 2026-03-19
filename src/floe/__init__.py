@@ -170,6 +170,8 @@ from floe.apiclient import (
     HindsightDataRequest,
     HindsightEvent,
     MinuteSurface,
+    OptionsScreenerRequest,
+    OptionsScreenerResponse,
     SurfacePoint,
 )
 
@@ -310,5 +312,7 @@ __all__ = [
     "HindsightDataRequest",
     "HindsightEvent",
     "MinuteSurface",
+    "OptionsScreenerRequest",
+    "OptionsScreenerResponse",
     "SurfacePoint",
 ]

@@ -13,6 +13,9 @@ from urllib.request import Request, urlopen
 _DEFAULT_HINDSIGHT_BASE_URL = "https://hindsightapi.com/api"
 _DEFAULT_DEALER_BASE_URL = "https://vannacharm.com/api"
 _DEFAULT_AMT_BASE_URL = "https://amtjoy.com/api"
+_DEFAULT_WHEELSCREENER_BASE_URL = "https://wheelscreener.com/api"
+_DEFAULT_LEAPSSCREENER_BASE_URL = "https://leapsscreener.com/api"
+_DEFAULT_OPTIONSCREENER_BASE_URL = "https://option-screener.com/api"
 _DEFAULT_TIMEOUT = 30
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -105,6 +108,29 @@ class AMTEventsRow:
     events: list[dict[str, Any]] = field(default_factory=list)
 
 
+@dataclass
+class OptionsScreenerRequest:
+    """Request for options strategy data from Wheel Screener, LEAPS Screener, or Option Screener."""
+
+    strategy: str = ""
+    search: str = ""
+    page: int = 0
+    page_size: int = 0
+    order_by: str = ""
+    order_direction: str = ""
+    extra_params: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class OptionsScreenerResponse:
+    """Paginated response of options strategy rows."""
+
+    data: list[dict[str, Any]] = field(default_factory=list)
+    total: int = 0
+    page: int = 0
+    page_size: int = 0
+
+
 class APIError(Exception):
     """Raised when an API request fails."""
 
@@ -146,12 +172,18 @@ class ApiClient:
         hindsight_base_url: str = _DEFAULT_HINDSIGHT_BASE_URL,
         dealer_base_url: str = _DEFAULT_DEALER_BASE_URL,
         amt_base_url: str = _DEFAULT_AMT_BASE_URL,
+        wheel_screener_base_url: str = _DEFAULT_WHEELSCREENER_BASE_URL,
+        leaps_screener_base_url: str = _DEFAULT_LEAPSSCREENER_BASE_URL,
+        option_screener_base_url: str = _DEFAULT_OPTIONSCREENER_BASE_URL,
     ) -> None:
         self._api_key = api_key.strip()
         self._timeout = timeout
         self._hindsight_base_url = hindsight_base_url
         self._dealer_base_url = dealer_base_url
         self._amt_base_url = amt_base_url
+        self._wheel_screener_base_url = wheel_screener_base_url
+        self._leaps_screener_base_url = leaps_screener_base_url
+        self._option_screener_base_url = option_screener_base_url
 
     # -- public API --------------------------------------------------------
 
@@ -203,7 +235,43 @@ class ApiClient:
         body = self._get_raw(self._amt_base_url, "/getAMTEvents", params)
         return _decode_list(body, _parse_amt_events, "amt events")
 
+    def get_wheel_screener_data(self, req: OptionsScreenerRequest) -> OptionsScreenerResponse:
+        """Retrieve options strategy data from the Wheel Screener API."""
+        return self._get_options_screener_data(self._wheel_screener_base_url, "/get-options", req)
+
+    def get_leaps_screener_data(self, req: OptionsScreenerRequest) -> OptionsScreenerResponse:
+        """Retrieve options strategy data from the LEAPS Screener API."""
+        return self._get_options_screener_data(self._leaps_screener_base_url, "/get-options", req)
+
+    def get_option_screener_data(self, req: OptionsScreenerRequest) -> OptionsScreenerResponse:
+        """Retrieve options strategy data from the Option Screener API."""
+        return self._get_options_screener_data(self._option_screener_base_url, "/getOptionsData", req)
+
     # -- internals ---------------------------------------------------------
+
+    def _get_options_screener_data(
+        self, base_url: str, path: str, req: OptionsScreenerRequest
+    ) -> OptionsScreenerResponse:
+        _validate_options_screener_request(req)
+
+        params: dict[str, str] = {"strategy": req.strategy.strip().upper()}
+        if req.search.strip():
+            params["search"] = req.search.strip()
+        if req.page > 0:
+            params["page"] = str(req.page)
+        if req.page_size > 0:
+            params["page_size"] = str(req.page_size)
+        if req.order_by.strip():
+            params["order_by"] = req.order_by.strip()
+        if req.order_direction.strip():
+            params["order_direction"] = req.order_direction.strip()
+
+        for k, v in req.extra_params.items():
+            if v.strip():
+                params[k] = v.strip()
+
+        body = self._get_raw(base_url, path, params)
+        return _decode_options_screener_response(body)
 
     def _get_raw(self, base_url: str, path: str, params: dict[str, str]) -> bytes:
         if not self._api_key:
@@ -418,3 +486,53 @@ def _parse_amt_events(d: dict) -> AMTEventsRow:
         session_id=d.get("session_id", ""),
         events=d.get("events", []),
     )
+
+
+def _validate_options_screener_request(req: OptionsScreenerRequest) -> None:
+    if not req.strategy.strip():
+        raise ValueError("strategy is required")
+
+
+def _decode_options_screener_response(body: bytes) -> OptionsScreenerResponse:
+    text = body.decode("utf-8", errors="replace")
+    data = json.loads(text)
+
+    # Try envelope format: {"success": true, "data": [...], "total": N, ...}
+    if isinstance(data, dict):
+        is_envelope = any(
+            k in data for k in ("success", "data", "error", "message", "subscriptionEnd", "subscription_end")
+        )
+        if is_envelope:
+            if not data.get("success", False):
+                raise APIError(
+                    status_code=200,
+                    message=_first_non_empty(
+                        data.get("error", ""),
+                        data.get("message", ""),
+                        "request failed",
+                    ),
+                    subscription_end=_first_non_empty(
+                        data.get("subscriptionEnd", ""),
+                        data.get("subscription_end", ""),
+                    ),
+                    raw_body=text,
+                )
+            raw_list = data.get("data", [])
+            rows = raw_list if isinstance(raw_list, list) else []
+            return OptionsScreenerResponse(
+                data=rows,
+                total=data.get("total", len(rows)),
+                page=data.get("page", 1),
+                page_size=data.get("page_size", len(rows)),
+            )
+
+    # Try raw array format
+    if isinstance(data, list):
+        return OptionsScreenerResponse(
+            data=data,
+            total=len(data),
+            page=1,
+            page_size=len(data),
+        )
+
+    raise APIError(message="failed to decode options screener response")

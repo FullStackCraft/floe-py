@@ -1,6 +1,6 @@
 ---
 title: Dataset API Clients
-description: Query hindsight, dealer, and AMT datasets with ApiClient.
+description: Query hindsight, dealer, AMT, and options screener datasets with ApiClient.
 order: 7
 ---
 
@@ -39,4 +39,37 @@ event_rows = client.get_amt_events(
     AMTRequest(symbol="NQ", session_id="2026-03-10")
 )
 print(len(event_rows))
+
+# Wheel Screener
+from floe import OptionsScreenerRequest
+
+wheel_data = client.get_wheel_screener_data(
+    OptionsScreenerRequest(
+        strategy="CC",
+        page_size=10,
+        order_by="score",
+        order_direction="desc",
+        extra_params={"min_score": "70", "sector": "Technology"},
+    )
+)
+print(f"wheel rows: {len(wheel_data.data)}, total: {wheel_data.total}")
+
+# LEAPS Screener
+leaps_data = client.get_leaps_screener_data(
+    OptionsScreenerRequest(
+        strategy="LC",
+        extra_params={"min_dte": "180", "max_delta": "0.7"},
+    )
+)
+print(f"leaps rows: {len(leaps_data.data)}, total: {leaps_data.total}")
+
+# Option Screener
+option_data = client.get_option_screener_data(
+    OptionsScreenerRequest(
+        strategy="CDS",
+        search="AAPL",
+        page_size=25,
+    )
+)
+print(f"option screener rows: {len(option_data.data)}, total: {option_data.total}")
 ```
