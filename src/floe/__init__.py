@@ -161,6 +161,8 @@ from floe.adapters import (
 # API client
 from floe.apiclient import (
     APIError,
+    AMTEventCategory,
+    AMTEventCode,
     AMTEventsRow,
     AMTRequest,
     AMTSessionStatsRow,
@@ -303,6 +305,8 @@ __all__ = [
     "tda_adapter",
     # API client
     "APIError",
+    "AMTEventCategory",
+    "AMTEventCode",
     "AMTEventsRow",
     "AMTRequest",
     "AMTSessionStatsRow",

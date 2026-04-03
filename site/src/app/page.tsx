@@ -112,7 +112,7 @@ export default function Home() {
         </div>
         <div className="text-xs mt-1">
           <a href="https://fullstackcraft.github.io/floe/" className="hover:text-black transition-colors">
-            Looking for the typescript version?
+            Looking for the TypeScript version?
           </a>
         </div>
         <div className="text-xs mt-1">

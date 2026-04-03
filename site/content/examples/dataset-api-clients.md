@@ -7,7 +7,7 @@ order: 7
 ## Create the Client
 
 ```python
-from floe import AMTRequest, DealerMinuteSurfacesRequest, HindsightDataRequest, ApiClient
+from floe import AMTEventCategory, AMTEventCode, AMTRequest, DealerMinuteSurfacesRequest, HindsightDataRequest, ApiClient
 
 client = ApiClient("YOUR_API_KEY")
 
@@ -30,15 +30,41 @@ minute_rows = client.get_dealer_minute_surfaces(
 )
 print(len(minute_rows))
 
+# AMT Session Stats — supports futures (ES, NQ, YM, RTY, GC, SI, CL, NG, BTC, ZN
+# and micros MES, MNQ, MYM, M2K, MGC, MCL, MBT, SIL) and stocks (SPY, QQQ, IWM,
+# DIA, AAPL, MSFT, AMZN, GOOGL, META, NVDA, TSLA, AVGO, AMD, NFLX, JPM).
 session_rows = client.get_amt_session_stats(
-    AMTRequest(symbol="NQ", session_id="2026-03-10")
+    AMTRequest(symbol="NQ", session_id="2025-03-10")
 )
 print(len(session_rows))
 
+# Stock example
+spy_rows = client.get_amt_session_stats(
+    AMTRequest(symbol="SPY", session_id="2025-03-10")
+)
+print(len(spy_rows))
+
+# AMT Events — 66 typed events across 5 categories (TPO, Price, Volume, Session, Overnight)
+from floe import AMTEventCategory, AMTEventCode
+
 event_rows = client.get_amt_events(
-    AMTRequest(symbol="NQ", session_id="2026-03-10")
+    AMTRequest(symbol="NQ", session_id="2025-03-10")
 )
 print(len(event_rows))
+
+# Filter events by category
+tpo_events = [
+    e for e in event_rows[0].events
+    if e.get("event_category") == AMTEventCategory.TPO
+]
+print(f"TPO events: {len(tpo_events)}")
+
+# Check for specific event codes
+poor_highs = [
+    e for e in event_rows[0].events
+    if e.get("event_code") == AMTEventCode.TPO_POOR_HIGH
+]
+print(f"Poor highs: {len(poor_highs)}")
 
 # Wheel Screener
 from floe import OptionsScreenerRequest
